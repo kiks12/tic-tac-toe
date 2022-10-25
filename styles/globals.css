@@ -1,26 +1,30 @@
-html,
-body {
-  padding: 0;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+html, body {
+  font-family: 'Poppins';
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+main {
+  display: flex;
+  height: 99vh;
+  width: 99vw;
+  align-items: center;
+  justify-content: center;
 }
 
-* {
-  box-sizing: border-box;
+form {
+  width: min(90%, 35em);
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-  body {
-    color: white;
-    background: black;
-  }
+input {
+  padding: 1em;
+  border-radius: 0.5em;
+  border: 0.5px solid lightgray;
+}
+
+button {
+  border-radius: 0.5em;
+  border: 0.5px solid rgba(156, 50, 50, 0.851);
+  background-color: rgba(225, 83, 83, 0.851);
+  font-family: 'Poppins';
+  color: white;
+  padding: 1em;
 }
