@@ -11,7 +11,7 @@ const Connect: NextPage = ({
   const [socketURL] = useState<string>('ws://localhost:4000');
   const [playerID, setPlayerID] = useState<number>(0);
   const [players, setPlayers] = useState<any[]>([]);
-  const [turn, setTurn] = useState<boolean>(false);
+  const [turn, setTurn] = useState<number>(0);
   const [messageHistory, setMessageHistory] = useState<any[]>([]);
   const { sendJsonMessage, lastJsonMessage, lastMessage, readyState } = useWebSocket(socketURL);
   const [grid, setGrid] = useState<number[][]>([]);
@@ -40,7 +40,8 @@ const Connect: NextPage = ({
       setPlayers(lastJsonMessage.players);
     }
     if (lastJsonMessage && 'grid' in lastJsonMessage) setGrid(lastJsonMessage.grid);
-  }, [lastJsonMessage, username]);
+    if (lastJsonMessage && 'turn' in lastJsonMessage) setTurn(lastJsonMessage.turn);
+  }, [lastJsonMessage, username, playerID]);
 
   useEffect(() => {
     setMessageHistory(prev => [...prev, lastMessage]);
@@ -50,16 +51,31 @@ const Connect: NextPage = ({
     // createGrid()
   // }, []);
 
-  const createGrid = () => {
-    const newGrid: number[][] = [];
-    for (let i in [0, 1, 2]) {
-      let row: number[] = []
-      for (let i in [0, 1, 2]) {
-        row.push(0); 
-      }
-      newGrid.push(row);
-    }
-    setGrid(newGrid);
+  // const createGrid = () => {
+  //   const newGrid: number[][] = [];
+  //   for (let i in [0, 1, 2]) {
+  //     let row: number[] = []
+  //     for (let i in [0, 1, 2]) {
+  //       row.push(0); 
+  //     }
+  //     newGrid.push(row);
+  //   }
+  //   setGrid(newGrid);
+  // }
+
+  const handleTileClick = (r: number, c: number) => {
+    if (turn !== playerID) return;
+    setGrid((prev) => {
+      return prev.map((row, idx) => {
+        return row.map((col, jdx) => {
+          if (r === idx && c === jdx) return playerID;
+          return col;
+        })
+      })
+    });
+    sendJsonMessage({
+      grid,
+    });
   }
 
   return (
@@ -86,9 +102,12 @@ const Connect: NextPage = ({
                 <div style={{
                   'display': 'flex',
                   'alignItems': 'center',
+                  'color': turn === player.id ? 'green' : 'black',
                 }}>
                   <p>Player {player.id}: {player.name}</p>
-                  <p style={{'margin': '0 0.5em'}}>
+                  <p style={{
+                    'margin': '0 0.5em',
+                  }}>
                     {player.id === 1 ? '🟢' : '❌'}
                     {playerID === player.id ? ' (You)' : ''} 
                   </p>
@@ -107,21 +126,32 @@ const Connect: NextPage = ({
           grid.length !== 0 &&
           grid.map((row, idx) => {
             return (
-              <div style={{'display': 'flex', 'height': '33%'}} key={idx}>
+              <div 
+                style={{'display': 'flex', 'height': '33%'}} 
+                key={idx}
+              >
                 {
-                  row.map((_col, jdx) => {
+                  row.map((col, jdx) => {
                     return (
                       <div 
+                        onClick={() => handleTileClick(idx, jdx)}
                         key={jdx}
                         style={{
-                          'padding': '1em',
+                          'padding': '0.5em',
                           'border': '0.5px solid lightgray',
                           'borderRadius': '0.5em',
                           'margin': '0.25em',
                           'width': '33%',
+                          'display': 'flex',
+                          'alignItems': 'center',
+                          'justifyContent': 'center',
+                          'fontSize': '1.5em',
                         }}
                       >
-                        {/* {col} */}
+                        <h1>
+                          { playerID === col && playerID === 1 ? '🟢' : ''} 
+                          { playerID === col && playerID === 2 ? '❌' : ''} 
+                        </h1>
                       </div>
                     )
                   }) 
