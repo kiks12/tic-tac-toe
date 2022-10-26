@@ -1,28 +1,26 @@
 import { GetServerSideProps, GetServerSidePropsContext, InferGetServerSidePropsType, NextPage } from "next"
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react"
-import useWebSocket from "react-use-websocket";
+import useWebSocket, { ReadyState } from "react-use-websocket";
 
 const Connect: NextPage = ({ 
   username
 }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
 
-  const [socketURL, setSocketURL] = useState<string>('ws://localhost:4000');
-  const [playerNumber, setPlayerNumber] = useState<number>(0);
-  const [players, setPlayers] = useState<any[]>([
-    {
-      id: 1,
-      name: 'Francis'
-    },
-    {
-      id: 2,
-      name: 'James',
-    },
-  ]);
-  const [side, setSide] = useState<number>(0);
+  const router = useRouter();
+  const [socketURL] = useState<string>('ws://localhost:4000');
+  const [playerID, setPlayerID] = useState<number>(0);
+  const [players, setPlayers] = useState<any[]>([]);
   const [turn, setTurn] = useState<boolean>(false);
   const [messageHistory, setMessageHistory] = useState<any[]>([]);
   const { sendJsonMessage, lastJsonMessage, lastMessage, readyState } = useWebSocket(socketURL);
   const [grid, setGrid] = useState<number[][]>([]);
+
+  useEffect(() => {
+    if (readyState === ReadyState.CLOSED) {
+      router.push('/waiting');
+    }
+  }, [router, readyState]);
 
   useEffect(() => {
     sendJsonMessage({
@@ -33,15 +31,24 @@ const Connect: NextPage = ({
 
   useEffect(() => {
     setMessageHistory(prev => [...prev, lastJsonMessage]);
-  }, [lastJsonMessage]);
+    if (lastJsonMessage && 'players' in lastJsonMessage) {
+      lastJsonMessage.players.forEach((player: any) => {
+        if (player.name === username) {
+          setPlayerID(player.id);
+        }
+      })
+      setPlayers(lastJsonMessage.players);
+    }
+    if (lastJsonMessage && 'grid' in lastJsonMessage) setGrid(lastJsonMessage.grid);
+  }, [lastJsonMessage, username]);
 
   useEffect(() => {
     setMessageHistory(prev => [...prev, lastMessage]);
   }, [lastMessage]);
 
-  useEffect(() => {
-    createGrid()
-  }, []);
+  // useEffect(() => {
+    // createGrid()
+  // }, []);
 
   const createGrid = () => {
     const newGrid: number[][] = [];
@@ -83,6 +90,7 @@ const Connect: NextPage = ({
                   <p>Player {player.id}: {player.name}</p>
                   <p style={{'margin': '0 0.5em'}}>
                     {player.id === 1 ? '🟢' : '❌'}
+                    {playerID === player.id ? ' (You)' : ''} 
                   </p>
                 </div>
               </div>
