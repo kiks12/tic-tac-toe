@@ -12,6 +12,7 @@ const Connect: NextPage = ({
   const [playerID, setPlayerID] = useState<number>(0);
   const [players, setPlayers] = useState<any[]>([]);
   const [turn, setTurn] = useState<number>(0);
+  const [moved, setMoved] = useState<boolean>(false);
   const { sendJsonMessage, lastJsonMessage, lastMessage, readyState } = useWebSocket(socketURL);
   const [grid, setGrid] = useState<number[][]>([]);
 
@@ -49,19 +50,27 @@ const Connect: NextPage = ({
   }, [lastJsonMessage]);
 
   useEffect(() => {
-    if (turn !== playerID) {
+    if (moved) setTurn(turn === 1 ? 2 : 1);
+  }, [moved, turn]);
+
+  useEffect(() => {
+    if (turn !== playerID && moved) {
+      setMoved(false);
       sendJsonMessage({
         move: true,
         grid,
       });
     }
-  }, [grid, playerID, sendJsonMessage, turn]);
+  }, [grid, playerID, sendJsonMessage, turn, moved]);
 
   const mutateGrid = async (r: number, c: number) => {
     setGrid((prev) => {
       return prev.map((row, idx) => {
         return row.map((col, jdx) => {
-          if (r === idx && c === jdx) return playerID;
+          if (r === idx && c === jdx && col === 0) {
+            setMoved(true);
+            return playerID;
+          }
           return col;
         })
       })
@@ -71,7 +80,6 @@ const Connect: NextPage = ({
   const handleTileClick = async (r: number, c: number) => {
     if (turn !== playerID) return;
     mutateGrid(r, c);
-    setTurn(prev => prev === 1 ? 2 : 1);
   }
 
   const quit = async () => {
@@ -152,8 +160,9 @@ const Connect: NextPage = ({
                         }}
                       >
                         <h1>
-                          { playerID === col && playerID === 1 ? '🟢' : ''} 
-                          { playerID === col && playerID === 2 ? '❌' : ''} 
+                          { col === 1 && '🟢'}
+                          { col === 2 && '❌'}
+                          { col === 0 && ''}
                         </h1>
                       </div>
                     )
