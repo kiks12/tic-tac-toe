@@ -12,7 +12,6 @@ const Connect: NextPage = ({
   const [playerID, setPlayerID] = useState<number>(0);
   const [players, setPlayers] = useState<any[]>([]);
   const [turn, setTurn] = useState<number>(0);
-  const [messageHistory, setMessageHistory] = useState<any[]>([]);
   const { sendJsonMessage, lastJsonMessage, lastMessage, readyState } = useWebSocket(socketURL);
   const [grid, setGrid] = useState<number[][]>([]);
 
@@ -30,7 +29,6 @@ const Connect: NextPage = ({
   }, [sendJsonMessage, username]);
 
   useEffect(() => {
-    setMessageHistory(prev => [...prev, lastJsonMessage]);
     if (lastJsonMessage && 'players' in lastJsonMessage) {
       lastJsonMessage.players.forEach((player: any) => {
         if (player.name === username) {
@@ -39,32 +37,27 @@ const Connect: NextPage = ({
       })
       setPlayers(lastJsonMessage.players);
     }
-    if (lastJsonMessage && 'grid' in lastJsonMessage) setGrid(lastJsonMessage.grid);
-    if (lastJsonMessage && 'turn' in lastJsonMessage) setTurn(lastJsonMessage.turn);
   }, [lastJsonMessage, username, playerID]);
 
   useEffect(() => {
-    setMessageHistory(prev => [...prev, lastMessage]);
-  }, [lastMessage]);
+    if (lastJsonMessage && 'grid' in lastJsonMessage && turn === playerID)
+      setGrid(lastJsonMessage.grid);
+  }, [lastJsonMessage, playerID, turn]);
 
-  // useEffect(() => {
-    // createGrid()
-  // }, []);
+  useEffect(() => {
+    if (lastJsonMessage && 'turn' in lastJsonMessage) setTurn(lastJsonMessage.turn);
+  }, [lastJsonMessage]);
 
-  // const createGrid = () => {
-  //   const newGrid: number[][] = [];
-  //   for (let i in [0, 1, 2]) {
-  //     let row: number[] = []
-  //     for (let i in [0, 1, 2]) {
-  //       row.push(0); 
-  //     }
-  //     newGrid.push(row);
-  //   }
-  //   setGrid(newGrid);
-  // }
+  useEffect(() => {
+    if (turn !== playerID) {
+      sendJsonMessage({
+        move: true,
+        grid,
+      });
+    }
+  }, [grid, playerID, sendJsonMessage, turn]);
 
-  const handleTileClick = (r: number, c: number) => {
-    if (turn !== playerID) return;
+  const mutateGrid = async (r: number, c: number) => {
     setGrid((prev) => {
       return prev.map((row, idx) => {
         return row.map((col, jdx) => {
@@ -73,8 +66,18 @@ const Connect: NextPage = ({
         })
       })
     });
+  }
+
+  const handleTileClick = async (r: number, c: number) => {
+    if (turn !== playerID) return;
+    mutateGrid(r, c);
+    setTurn(prev => prev === 1 ? 2 : 1);
+  }
+
+  const quit = async () => {
     sendJsonMessage({
-      grid,
+      close: true,
+      username,
     });
   }
 
@@ -89,7 +92,7 @@ const Connect: NextPage = ({
         'alignItems': 'center'
       }}>
         <h1>Tic Tac Toe</h1>
-        <button>Quit</button>
+        <button onClick={quit}>Quit</button>
       </div>
       <div style={{
         'width': 'min(90%, 30em)',
@@ -161,20 +164,6 @@ const Connect: NextPage = ({
           })
         }
       </div>
-      {/* <div style={{
-        'background': 'rgba(90,90,90,0.1)',
-        'borderRadius': '0.5em',
-        'padding': '0.5em 1em',
-        'width': 'min(90%, 30em)',
-        'margin': '0 auto',
-        'height': '15vh',
-        'maxHeight': '15vh',
-        'overflow': 'scroll'
-      }}>
-        <pre>
-          {JSON.stringify(messageHistory, null, 2)}
-        </pre>
-      </div> */}
     </main>
   )
 }
