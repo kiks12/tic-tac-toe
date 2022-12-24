@@ -75,6 +75,7 @@ const Connect: NextPage = ({ username }: InferGetServerSidePropsType<typeof getS
       [0, 0, 0],
       [0, 0, 0],
     ]);
+    setMoved(true);
   };
 
   const mutateGrid = async (r: number, c: number) => {
